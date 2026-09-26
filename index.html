@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Quiz Night</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="game">
+
+        <!-- HEADER -->
+        <header class="game-header">
+
+            <div>
+                <h1>QUIZ NIGHT</h1>
+                <p>Вечер вопросов</p>
+            </div>
+
+            <!-- СЧЁТ КОМАНД -->
+            <div class="teams-score">
+
+                <div class="team-score team-tush">
+                    <span>ТУШЬ</span>
+                    <strong id="score-tush">0</strong>
+                </div>
+
+                <div class="team-score team-font">
+                    <span>ШРИФТ</span>
+                    <strong id="score-font">0</strong>
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- GAME BOARD -->
+        <section id="game-board" class="game-board"></section>
+
+    </main>
+
+
+    <!-- QUESTION MODAL -->
+    <div
+        id="question-modal"
+        class="modal hidden"
+    >
+
+        <div class="modal-content">
+
+            <!-- HEADER -->
+            <div class="question-header">
+
+                <span id="question-category">
+                    Категория
+                </span>
+
+                <strong id="question-points">
+                    0
+                </strong>
+
+            </div>
+
+
+            <!-- QUESTION -->
+            <div class="question-body">
+
+                <h2 id="question-text">
+                    Вопрос
+                </h2>
+
+            </div>
+
+
+            <!-- ANSWER -->
+            <div
+                id="answer"
+                class="answer hidden"
+            >
+
+                <span>Ответ</span>
+
+                <p id="answer-text"></p>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+            <div class="question-actions">
+
+                <button
+                    id="show-answer"
+                    type="button"
+                >
+                    Показать ответ
+                </button>
+
+
+                <!-- ВЫБОР КОМАНДЫ -->
+
+                <button
+                    id="correct-tush"
+                    class="team-answer hidden"
+                    type="button"
+                >
+                    ТУШЬ
+                    <span>+</span>
+                </button>
+
+                <button
+                    id="correct-font"
+                    class="team-answer hidden"
+                    type="button"
+                >
+                    ШРИФТ
+                    <span>+</span>
+                </button>
+
+
+                <button
+                    id="wrong-answer"
+                    class="hidden"
+                    type="button"
+                >
+                    Неправильно
+                </button>
+
+
+                <button
+                    id="close-modal"
+                    type="button"
+                >
+                    Закрыть
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>
