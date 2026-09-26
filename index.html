@@ -2,154 +2,332 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Quiz Night</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <main class="game">
+<main class="game">
 
-        <!-- HEADER -->
-        <header class="game-header">
+    <header class="game-header">
+
+        <div class="brand">
+            <div class="brand-label">QUIZ NIGHT</div>
+            <h1>Вечер вопросов</h1>
+        </div>
+
+        <div class="header-actions">
+            <button
+                id="surrender-game"
+                class="surrender-button"
+                type="button"
+            >
+                Сдаться
+            </button>
+
+            <button
+                id="new-game"
+                class="new-game-button"
+                type="button"
+            >
+                Новая игра
+            </button>
+        </div>
+
+    </header>
+
+
+    <section class="scores">
+
+        <div class="team-score team-tush">
+
+            <div class="team-info">
+                <input
+                    id="team-name-tush"
+                    class="team-name-input"
+                    type="text"
+                    maxlength="18"
+                    value="ТУШЬ"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+
+                <span class="team-hint">
+                    название команды
+                </span>
+            </div>
+
+            <div
+                id="score-tush"
+                class="team-points"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="round-label">
+
+            <span id="round-number">
+                ROUND 00
+            </span>
+
+            <small>
+                ВОПРОС
+            </small>
+
+        </div>
+
+
+        <div class="team-score team-font">
+
+            <div class="team-info">
+                <input
+                    id="team-name-font"
+                    class="team-name-input"
+                    type="text"
+                    maxlength="18"
+                    value="ШРИФТ"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+
+                <span class="team-hint">
+                    название команды
+                </span>
+            </div>
+
+            <div
+                id="score-font"
+                class="team-points"
+            >
+                0
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section
+        id="game-board"
+        class="game-board"
+    ></section>
+
+
+    <footer class="game-footer">
+
+        <span>
+            Выберите стоимость вопроса
+        </span>
+
+        <span id="questions-left">
+            30 вопросов осталось
+        </span>
+
+    </footer>
+
+</main>
+
+
+<!-- QUESTION MODAL -->
+
+<div
+    id="question-modal"
+    class="modal hidden"
+>
+
+    <div class="modal-overlay"></div>
+
+    <div class="modal-content">
+
+        <div class="question-header">
 
             <div>
-                <h1>QUIZ NIGHT</h1>
-                <p>Вечер вопросов</p>
-            </div>
-
-            <!-- СЧЁТ КОМАНД -->
-            <div class="teams-score">
-
-                <div class="team-score team-tush">
-                    <span>ТУШЬ</span>
-                    <strong id="score-tush">0</strong>
-                </div>
-
-                <div class="team-score team-font">
-                    <span>ШРИФТ</span>
-                    <strong id="score-font">0</strong>
-                </div>
-
-            </div>
-
-        </header>
-
-
-        <!-- GAME BOARD -->
-        <section id="game-board" class="game-board"></section>
-
-    </main>
-
-
-    <!-- QUESTION MODAL -->
-    <div
-        id="question-modal"
-        class="modal hidden"
-    >
-
-        <div class="modal-content">
-
-            <!-- HEADER -->
-            <div class="question-header">
 
                 <span id="question-category">
                     Категория
                 </span>
 
-                <strong id="question-points">
+                <div class="question-number">
+                    ВОПРОС
+                </div>
+
+            </div>
+
+            <strong id="question-points">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="question-body">
+
+            <h2 id="question-text">
+                Вопрос
+            </h2>
+
+        </div>
+
+
+        <div
+            id="answer"
+            class="answer hidden"
+        >
+
+            <div class="answer-label">
+                ОТВЕТ
+            </div>
+
+            <p id="answer-text"></p>
+
+        </div>
+
+
+        <div class="question-actions">
+
+            <button
+                id="show-answer"
+                class="primary-action"
+                type="button"
+            >
+                Показать ответ
+            </button>
+
+
+            <div class="team-actions">
+
+                <button
+                    id="correct-tush"
+                    class="team-answer team-answer-tush hidden"
+                    type="button"
+                >
+                    <span id="correct-tush-name">ТУШЬ</span>
+                    <span>+</span>
+                </button>
+
+
+                <button
+                    id="correct-font"
+                    class="team-answer team-answer-font hidden"
+                    type="button"
+                >
+                    <span id="correct-font-name">ШРИФТ</span>
+                    <span>+</span>
+                </button>
+
+            </div>
+
+
+            <button
+                id="wrong-answer"
+                class="secondary-action hidden"
+                type="button"
+            >
+                Неправильно
+            </button>
+
+
+            <button
+                id="close-modal"
+                class="close-action"
+                type="button"
+            >
+                Закрыть
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- GAME OVER -->
+
+<div
+    id="game-over-modal"
+    class="modal hidden"
+>
+
+    <div class="modal-overlay"></div>
+
+    <div class="game-over-content">
+
+        <div
+            id="game-over-label"
+            class="game-over-label"
+        >
+            ИГРА ЗАВЕРШЕНА
+        </div>
+
+        <h2 id="winner-title">
+            Победитель
+        </h2>
+
+        <div class="final-score">
+
+            <div class="final-team">
+
+                <span id="final-team-name-tush">
+                    ТУШЬ
+                </span>
+
+                <strong id="final-score-tush">
                     0
                 </strong>
 
             </div>
 
 
-            <!-- QUESTION -->
-            <div class="question-body">
-
-                <h2 id="question-text">
-                    Вопрос
-                </h2>
-
+            <div class="final-divider">
+                :
             </div>
 
 
-            <!-- ANSWER -->
-            <div
-                id="answer"
-                class="answer hidden"
-            >
+            <div class="final-team">
 
-                <span>Ответ</span>
-
-                <p id="answer-text"></p>
-
-            </div>
-
-
-            <!-- ACTIONS -->
-            <div class="question-actions">
-
-                <button
-                    id="show-answer"
-                    type="button"
-                >
-                    Показать ответ
-                </button>
-
-
-                <!-- ВЫБОР КОМАНДЫ -->
-
-                <button
-                    id="correct-tush"
-                    class="team-answer hidden"
-                    type="button"
-                >
-                    ТУШЬ
-                    <span>+</span>
-                </button>
-
-                <button
-                    id="correct-font"
-                    class="team-answer hidden"
-                    type="button"
-                >
+                <span id="final-team-name-font">
                     ШРИФТ
-                    <span>+</span>
-                </button>
+                </span>
 
-
-                <button
-                    id="wrong-answer"
-                    class="hidden"
-                    type="button"
-                >
-                    Неправильно
-                </button>
-
-
-                <button
-                    id="close-modal"
-                    type="button"
-                >
-                    Закрыть
-                </button>
+                <strong id="final-score-font">
+                    0
+                </strong>
 
             </div>
 
         </div>
 
+
+        <button
+            id="restart-game"
+            class="primary-action"
+            type="button"
+        >
+            Новая игра
+        </button>
+
     </div>
 
+</div>
 
-    <script src="app.js"></script>
+
+<script src="app.js"></script>
 
 </body>
 </html>
