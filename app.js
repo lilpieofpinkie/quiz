@@ -1,3 +1,4 @@
+
 let questions = [];
 
 let scores = {
@@ -5,52 +6,23 @@ let scores = {
     font: 0
 };
 
-let teamNames = {
-    tush: "ТУШЬ",
-    font: "ШРИФТ"
-};
-
-let usedQuestions = new Set();
-
 let currentQuestion = null;
-
-let roundNumber = 0;
-
-let gameFinished = false;
-
-const STORAGE_KEY = "quiz-night-game-v2";
+let usedQuestions = 0;
 
 
-// ==============================
-// ELEMENTS
-// ==============================
+// ==========================================
+// ЭЛЕМЕНТЫ СТРАНИЦЫ
+// ==========================================
 
-const gameBoard =
-    document.getElementById("game-board");
+const gameBoard = document.getElementById("game-board");
+const modal = document.getElementById("question-modal");
 
-const modal =
-    document.getElementById("question-modal");
+const questionCategory = document.getElementById("question-category");
+const questionPoints = document.getElementById("question-points");
+const questionText = document.getElementById("question-text");
 
-const gameOverModal =
-    document.getElementById("game-over-modal");
-
-
-const questionCategory =
-    document.getElementById("question-category");
-
-const questionPoints =
-    document.getElementById("question-points");
-
-const questionText =
-    document.getElementById("question-text");
-
-
-const answerBlock =
-    document.getElementById("answer");
-
-const answerText =
-    document.getElementById("answer-text");
-
+const answer = document.getElementById("answer");
+const answerText = document.getElementById("answer-text");
 
 const showAnswerButton =
     document.getElementById("show-answer");
@@ -67,13 +39,11 @@ const wrongButton =
 const closeButton =
     document.getElementById("close-modal");
 
-
 const scoreTush =
     document.getElementById("score-tush");
 
 const scoreFont =
     document.getElementById("score-font");
-
 
 const teamNameTush =
     document.getElementById("team-name-tush");
@@ -81,20 +51,11 @@ const teamNameTush =
 const teamNameFont =
     document.getElementById("team-name-font");
 
-
 const correctTushName =
     document.getElementById("correct-tush-name");
 
 const correctFontName =
     document.getElementById("correct-font-name");
-
-
-const finalTeamNameTush =
-    document.getElementById("final-team-name-tush");
-
-const finalTeamNameFont =
-    document.getElementById("final-team-name-font");
-
 
 const newGameButton =
     document.getElementById("new-game");
@@ -105,31 +66,67 @@ const surrenderButton =
 const restartGameButton =
     document.getElementById("restart-game");
 
-
 const questionsLeft =
     document.getElementById("questions-left");
 
-const roundNumberElement =
+const roundNumber =
     document.getElementById("round-number");
 
 
-const winnerTitle =
-    document.getElementById("winner-title");
+// ==========================================
+// ИЗОБРАЖЕНИЕ ВОПРОСА
+// ==========================================
 
-const gameOverLabel =
-    document.getElementById("game-over-label");
+const questionImage =
+    document.createElement("img");
+
+questionImage.className =
+    "question-image";
+
+questionImage.alt =
+    "Изображение к вопросу";
+
+questionImage.style.display =
+    "none";
 
 
-const finalScoreTush =
-    document.getElementById("final-score-tush");
+// ВАЖНО:
+// картинка вставляется внутрь .question-body
+// перед заголовком вопроса.
 
-const finalScoreFont =
-    document.getElementById("final-score-font");
+questionText.parentNode.insertBefore(
+    questionImage,
+    questionText
+);
 
 
-// ==============================
-// LOAD QUESTIONS
-// ==============================
+// ==========================================
+// ВАРИАНТЫ ОТВЕТА
+// ==========================================
+
+const optionsContainer =
+    document.createElement("div");
+
+optionsContainer.className =
+    "question-options";
+
+optionsContainer.style.display =
+    "none";
+
+
+// Вставляем варианты ПОСЛЕ текста вопроса.
+// Здесь insertBefore используется правильно:
+// оба элемента находятся внутри .question-body.
+
+questionText.parentNode.insertBefore(
+    optionsContainer,
+    questionText.nextSibling
+);
+
+
+// ==========================================
+// ЗАГРУЗКА ВОПРОСОВ
+// ==========================================
 
 async function loadQuestions() {
 
@@ -140,270 +137,324 @@ async function loadQuestions() {
         );
 
         if (!response.ok) {
+
             throw new Error(
-                `Ошибка загрузки questions.json: ${response.status}`
+                `Не удалось загрузить questions.json: ${response.status}`
             );
+
         }
+
 
         const data =
             await response.json();
+
 
         if (
             !data.categories ||
             !Array.isArray(data.categories)
         ) {
+
             throw new Error(
                 "В questions.json отсутствует массив categories"
             );
+
         }
+
 
         questions =
             data.categories;
 
-        validateQuestions();
-
-        loadGameState();
-
-        createGameBoard();
-
-        updateAllUI();
 
         console.log(
             "Вопросы загружены:",
             questions
         );
 
-    } catch (error) {
+
+        createGameBoard();
+
+        updateQuestionsLeft();
+
+        updateTeamNames();
+
+    }
+
+    catch (error) {
 
         console.error(
             "Ошибка загрузки вопросов:",
             error
         );
 
+
         gameBoard.innerHTML = `
+
             <div class="load-error">
-                <h2>Не удалось загрузить вопросы</h2>
-                <p>${escapeHtml(error.message)}</p>
-                <p>Проверь файл data/questions.json</p>
+
+                <h2>
+                    Не удалось загрузить вопросы
+                </h2>
+
+                <p>
+                    ${error.message}
+                </p>
+
+                <p>
+                    Проверь файл
+                    <strong>
+                        data/questions.json
+                    </strong>
+                </p>
+
             </div>
+
         `;
+
     }
+
 }
 
 
-// ==============================
-// VALIDATE QUESTIONS
-// ==============================
-
-function validateQuestions() {
-
-    questions.forEach(
-        (category, categoryIndex) => {
-
-            if (!category.name) {
-                throw new Error(
-                    `Категория ${categoryIndex + 1} не имеет имени`
-                );
-            }
-
-            if (!Array.isArray(category.questions)) {
-                throw new Error(
-                    `У категории "${category.name}" отсутствует массив questions`
-                );
-            }
-
-            category.questions.forEach(
-                (question, questionIndex) => {
-
-                    if (
-                        typeof question.points === "undefined" ||
-                        !question.question ||
-                        typeof question.answer === "undefined"
-                    ) {
-
-                        throw new Error(
-                            `Некорректный вопрос: ${category.name} / ${questionIndex + 1}`
-                        );
-                    }
-                }
-            );
-        }
-    );
-}
-
-
-// ==============================
-// CREATE BOARD
-// ==============================
+// ==========================================
+// СОЗДАНИЕ ИГРОВОГО ПОЛЯ
+// ==========================================
 
 function createGameBoard() {
 
     gameBoard.innerHTML = "";
 
-    questions.forEach(
-        (category, categoryIndex) => {
 
-            const categoryColumn =
-                document.createElement("div");
+    questions.forEach((category) => {
 
-            categoryColumn.className =
-                "category-column";
+        const categoryColumn =
+            document.createElement("div");
 
-
-            const categoryHeader =
-                document.createElement("div");
-
-            categoryHeader.className =
-                "category-header";
-
-            categoryHeader.textContent =
-                category.name;
+        categoryColumn.className =
+            "category-column";
 
 
-            categoryColumn.appendChild(
-                categoryHeader
+        // Название категории
+
+        const categoryHeader =
+            document.createElement("div");
+
+        categoryHeader.className =
+            "category-header";
+
+        categoryHeader.textContent =
+            category.name;
+
+
+        categoryColumn.appendChild(
+            categoryHeader
+        );
+
+
+        // Вопросы
+
+        if (
+            !category.questions ||
+            !Array.isArray(category.questions)
+        ) {
+
+            console.warn(
+                `У категории "${category.name}" нет вопросов`
             );
 
+            return;
 
-            category.questions.forEach(
-                (question, questionIndex) => {
-
-                    const questionButton =
-                        document.createElement("button");
-
-                    questionButton.className =
-                        "question-button";
-
-                    questionButton.type =
-                        "button";
-
-                    questionButton.textContent =
-                        question.points;
+        }
 
 
-                    const questionId =
-                        createQuestionId(
-                            categoryIndex,
-                            questionIndex
-                        );
+        category.questions.forEach(
+            (question) => {
+
+                const questionButton =
+                    document.createElement("button");
+
+                questionButton.className =
+                    "question-button";
+
+                questionButton.type =
+                    "button";
+
+                questionButton.textContent =
+                    question.points;
 
 
-                    questionButton.dataset.questionId =
-                        questionId;
+                questionButton.addEventListener(
+                    "click",
+                    () => {
 
-
-                    if (
-                        usedQuestions.has(
-                            questionId
-                        )
-                    ) {
-
-                        markQuestionUsed(
+                        openQuestion(
+                            category,
+                            question,
                             questionButton
                         );
+
                     }
+                );
 
 
-                    questionButton.addEventListener(
-                        "click",
-                        () => {
+                categoryColumn.appendChild(
+                    questionButton
+                );
 
-                            openQuestion(
-                                category,
-                                question,
-                                questionButton,
-                                questionId
-                            );
-                        }
-                    );
+            }
+        );
 
 
-                    categoryColumn.appendChild(
-                        questionButton
-                    );
-                }
-            );
+        gameBoard.appendChild(
+            categoryColumn
+        );
 
+    });
 
-            gameBoard.appendChild(
-                categoryColumn
-            );
-        }
-    );
 }
 
 
-// ==============================
-// QUESTION ID
-// ==============================
-
-function createQuestionId(
-    categoryIndex,
-    questionIndex
-) {
-
-    return `${categoryIndex}-${questionIndex}`;
-}
-
-
-// ==============================
-// OPEN QUESTION
-// ==============================
+// ==========================================
+// ОТКРЫТИЕ ВОПРОСА
+// ==========================================
 
 function openQuestion(
     category,
     question,
-    button,
-    questionId
+    button
 ) {
 
-    if (
-        button.disabled ||
-        usedQuestions.has(questionId) ||
-        gameFinished
-    ) {
-        return;
-    }
-
-
     currentQuestion = {
-        category,
-        question,
-        button,
-        questionId
+        category: category,
+        question: question,
+        button: button
     };
 
 
-    // Каждый новый открытый вопрос = новый раунд
-    roundNumber++;
-
-    updateRound();
-
-    saveGameState();
-
+    // Категория
 
     questionCategory.textContent =
         category.name;
 
+
+    // Стоимость
+
     questionPoints.textContent =
         question.points;
 
+
+    // Вопрос
+
     questionText.textContent =
         question.question;
+
+
+    // ======================================
+    // ИЗОБРАЖЕНИЕ
+    // ======================================
+
+    if (question.image) {
+
+        questionImage.src =
+            question.image;
+
+        questionImage.style.display =
+            "block";
+
+    }
+    else {
+
+        questionImage.style.display =
+            "none";
+
+        questionImage.removeAttribute(
+            "src"
+        );
+
+    }
+
+
+    // ======================================
+    // ВАРИАНТЫ ОТВЕТА
+    // ======================================
+
+    optionsContainer.innerHTML = "";
+
+
+    if (
+        question.options &&
+        Array.isArray(question.options) &&
+        question.options.length > 0
+    ) {
+
+        optionsContainer.style.display =
+            "flex";
+
+
+        question.options.forEach(
+            (option, index) => {
+
+                const optionElement =
+                    document.createElement("div");
+
+                optionElement.className =
+                    "question-option";
+
+
+                const letter =
+                    String.fromCharCode(
+                        65 + index
+                    );
+
+
+                optionElement.innerHTML = `
+
+                    <span class="option-letter">
+                        ${letter}
+                    </span>
+
+                    <span class="option-text">
+                        ${option}
+                    </span>
+
+                `;
+
+
+                optionsContainer.appendChild(
+                    optionElement
+                );
+
+            }
+        );
+
+    }
+    else {
+
+        optionsContainer.style.display =
+            "none";
+
+    }
+
+
+    // ======================================
+    // ОТВЕТ
+    // ======================================
 
     answerText.textContent =
         question.answer;
 
 
-    answerBlock.classList.add(
+    answer.classList.add(
         "hidden"
     );
 
+
+    // ======================================
+    // КНОПКИ
+    // ======================================
 
     showAnswerButton.classList.remove(
         "hidden"
     );
-
 
     correctTushButton.classList.add(
         "hidden"
@@ -418,27 +469,39 @@ function openQuestion(
     );
 
 
+    // ======================================
+    // ОТКРЫВАЕМ МОДАЛЬНОЕ ОКНО
+    // ======================================
+
     modal.classList.remove(
         "hidden"
     );
+
 }
 
 
-// ==============================
-// SHOW ANSWER
-// ==============================
+// ==========================================
+// ПОКАЗАТЬ ОТВЕТ
+// ==========================================
 
 showAnswerButton.addEventListener(
     "click",
     () => {
 
-        answerBlock.classList.remove(
+        if (!currentQuestion) {
+            return;
+        }
+
+
+        answer.classList.remove(
             "hidden"
         );
+
 
         showAnswerButton.classList.add(
             "hidden"
         );
+
 
         correctTushButton.classList.remove(
             "hidden"
@@ -451,13 +514,14 @@ showAnswerButton.addEventListener(
         wrongButton.classList.remove(
             "hidden"
         );
+
     }
 );
 
 
-// ==============================
-// TUSH CORRECT
-// ==============================
+// ==========================================
+// КОМАНДА 1 ОТВЕТИЛА ПРАВИЛЬНО
+// ==========================================
 
 correctTushButton.addEventListener(
     "click",
@@ -467,18 +531,23 @@ correctTushButton.addEventListener(
             return;
         }
 
+
         scores.tush += Number(
             currentQuestion.question.points
         );
 
+
+        updateScores();
+
         finishQuestion();
+
     }
 );
 
 
-// ==============================
-// FONT CORRECT
-// ==============================
+// ==========================================
+// КОМАНДА 2 ОТВЕТИЛА ПРАВИЛЬНО
+// ==========================================
 
 correctFontButton.addEventListener(
     "click",
@@ -488,18 +557,23 @@ correctFontButton.addEventListener(
             return;
         }
 
+
         scores.font += Number(
             currentQuestion.question.points
         );
 
+
+        updateScores();
+
         finishQuestion();
+
     }
 );
 
 
-// ==============================
-// WRONG ANSWER
-// ==============================
+// ==========================================
+// НЕПРАВИЛЬНЫЙ ОТВЕТ
+// ==========================================
 
 wrongButton.addEventListener(
     "click",
@@ -509,110 +583,135 @@ wrongButton.addEventListener(
             return;
         }
 
+
         finishQuestion();
+
     }
 );
 
 
-// ==============================
-// FINISH QUESTION
-// ==============================
+// ==========================================
+// ЗАВЕРШЕНИЕ ВОПРОСА
+// ==========================================
 
 function finishQuestion() {
 
-    if (!currentQuestion) {
-        return;
-    }
-
-
-    usedQuestions.add(
-        currentQuestion.questionId
-    );
-
-
-    markQuestionUsed(
+    if (
+        currentQuestion &&
         currentQuestion.button
-    );
+    ) {
+
+        currentQuestion.button.classList.add(
+            "used"
+        );
+
+        currentQuestion.button.disabled =
+            true;
+
+
+        usedQuestions++;
+
+        updateQuestionsLeft();
+
+        updateRoundNumber();
+
+    }
 
 
     closeModal();
 
-    saveGameState();
-
-    updateAllUI();
-
-
-    if (
-        usedQuestions.size >=
-        getTotalQuestions()
-    ) {
-
-        setTimeout(
-            () => finishGame(false),
-            250
-        );
-    }
 }
 
 
-// ==============================
-// MARK USED
-// ==============================
-
-function markQuestionUsed(button) {
-
-    button.classList.add("used");
-
-    button.disabled = true;
-}
-
-
-// ==============================
-// UPDATE UI
-// ==============================
-
-function updateAllUI() {
-
-    updateScores();
-
-    updateRound();
-
-    updateQuestionsLeft();
-
-    updateTeamNames();
-
-    updateTeamButtons();
-}
-
-
-// ==============================
-// SCORE
-// ==============================
+// ==========================================
+// ОБНОВЛЕНИЕ СЧЁТА
+// ==========================================
 
 function updateScores() {
 
     scoreTush.textContent =
-        formatNumber(scores.tush);
+        scores.tush;
 
     scoreFont.textContent =
-        formatNumber(scores.font);
+        scores.font;
+
 }
 
 
-// ==============================
-// ROUND
-// ==============================
+// ==========================================
+// НАЗВАНИЯ КОМАНД
+// ==========================================
 
-function updateRound() {
+function updateTeamNames() {
 
-    roundNumberElement.textContent =
-        `ROUND ${String(roundNumber).padStart(2, "0")}`;
+    correctTushName.textContent =
+        teamNameTush.value ||
+        "Команда 1";
+
+    correctFontName.textContent =
+        teamNameFont.value ||
+        "Команда 2";
+
 }
 
 
-// ==============================
-// QUESTIONS LEFT
-// ==============================
+// Если пользователь меняет название команды,
+// сразу меняем название на кнопке ответа.
+
+teamNameTush.addEventListener(
+    "input",
+    () => {
+
+        correctTushName.textContent =
+            teamNameTush.value ||
+            "Команда 1";
+
+    }
+);
+
+
+teamNameFont.addEventListener(
+    "input",
+    () => {
+
+        correctFontName.textContent =
+            teamNameFont.value ||
+            "Команда 2";
+
+    }
+);
+
+
+// ==========================================
+// СЧЁТЧИК ВОПРОСОВ
+// ==========================================
+
+function getTotalQuestions() {
+
+    let total = 0;
+
+
+    questions.forEach(
+        (category) => {
+
+            if (
+                category.questions &&
+                Array.isArray(category.questions)
+            ) {
+
+                total +=
+                    category.questions.length;
+
+            }
+
+        }
+    );
+
+
+    return total;
+
+}
+
 
 function updateQuestionsLeft() {
 
@@ -620,180 +719,36 @@ function updateQuestionsLeft() {
         getTotalQuestions();
 
     const left =
-        total - usedQuestions.size;
-
-
-    if (left === 0) {
-
-        questionsLeft.textContent =
-            "Все вопросы сыграны";
-
-        return;
-    }
+        total - usedQuestions;
 
 
     questionsLeft.textContent =
-        `${left} ${getQuestionWord(left)} осталось`;
+        `${left} вопросов осталось`;
+
 }
 
 
-// ==============================
-// TEAM NAMES
-// ==============================
+// ==========================================
+// НОМЕР РАУНДА
+// ==========================================
 
-function updateTeamNames() {
+function updateRoundNumber() {
 
-    teamNameTush.value =
-        teamNames.tush;
-
-    teamNameFont.value =
-        teamNames.font;
-
-
-    correctTushName.textContent =
-        teamNames.tush;
-
-    correctFontName.textContent =
-        teamNames.font;
+    const round =
+        usedQuestions
+            .toString()
+            .padStart(2, "0");
 
 
-    finalTeamNameTush.textContent =
-        teamNames.tush;
+    roundNumber.textContent =
+        `ROUND ${round}`;
 
-    finalTeamNameFont.textContent =
-        teamNames.font;
 }
 
 
-function updateTeamButtons() {
-
-    correctTushButton.title =
-        `Правильный ответ команды ${teamNames.tush}`;
-
-    correctFontButton.title =
-        `Правильный ответ команды ${teamNames.font}`;
-}
-
-
-// ==============================
-// TEAM NAME INPUTS
-// ==============================
-
-function setupTeamNameInput(
-    input,
-    teamKey
-) {
-
-    input.addEventListener(
-        "change",
-        () => {
-
-            let name =
-                input.value.trim();
-
-            if (!name) {
-                name =
-                    teamKey === "tush"
-                        ? "ТУШЬ"
-                        : "ШРИФТ";
-            }
-
-
-            teamNames[teamKey] =
-                name;
-
-
-            updateTeamNames();
-
-            updateTeamButtons();
-
-            saveGameState();
-        }
-    );
-
-
-    input.addEventListener(
-        "keydown",
-        (event) => {
-
-            if (event.key === "Enter") {
-                input.blur();
-            }
-        }
-    );
-}
-
-
-setupTeamNameInput(
-    teamNameTush,
-    "tush"
-);
-
-
-setupTeamNameInput(
-    teamNameFont,
-    "font"
-);
-
-
-// ==============================
-// GET TOTAL QUESTIONS
-// ==============================
-
-function getTotalQuestions() {
-
-    return questions.reduce(
-        (total, category) => {
-
-            return total +
-                category.questions.length;
-
-        },
-        0
-    );
-}
-
-
-// ==============================
-// WORD
-// ==============================
-
-function getQuestionWord(number) {
-
-    const mod10 =
-        number % 10;
-
-    const mod100 =
-        number % 100;
-
-
-    if (
-        mod10 === 1 &&
-        mod100 !== 11
-    ) {
-        return "вопрос";
-    }
-
-
-    if (
-        mod10 >= 2 &&
-        mod10 <= 4 &&
-        (
-            mod100 < 10 ||
-            mod100 >= 20
-        )
-    ) {
-        return "вопроса";
-    }
-
-
-    return "вопросов";
-}
-
-
-// ==============================
-// CLOSE QUESTION
-// ==============================
+// ==========================================
+// ЗАКРЫТИЕ ВОПРОСА
+// ==========================================
 
 function closeModal() {
 
@@ -801,11 +756,37 @@ function closeModal() {
         "hidden"
     );
 
+
     currentQuestion = null;
 
-    answerBlock.classList.add(
+
+    // Ответ
+
+    answer.classList.add(
         "hidden"
     );
+
+
+    // Картинка
+
+    questionImage.style.display =
+        "none";
+
+    questionImage.removeAttribute(
+        "src"
+    );
+
+
+    // Варианты
+
+    optionsContainer.style.display =
+        "none";
+
+    optionsContainer.innerHTML =
+        "";
+
+
+    // Кнопки
 
     showAnswerButton.classList.remove(
         "hidden"
@@ -822,120 +803,47 @@ function closeModal() {
     wrongButton.classList.add(
         "hidden"
     );
+
 }
 
 
-// ==============================
-// SURRENDER
-// ==============================
+// ==========================================
+// КНОПКА "ЗАКРЫТЬ"
+// ==========================================
 
-surrenderButton.addEventListener(
+closeButton.addEventListener(
     "click",
     () => {
 
-        if (gameFinished) {
-            return;
-        }
+        closeModal();
 
-
-        const confirmed =
-            window.confirm(
-                "Точно закончить игру досрочно?"
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        if (!modal.classList.contains("hidden")) {
-            closeModal();
-        }
-
-
-        finishGame(true);
     }
 );
 
 
-// ==============================
-// FINISH GAME
-// ==============================
+// ==========================================
+// ESC
+// ==========================================
 
-function finishGame(
-    surrendered = false
-) {
+document.addEventListener(
+    "keydown",
+    (event) => {
 
-    gameFinished = true;
+        if (event.key === "Escape") {
 
-    closeModal();
+            closeModal();
 
+        }
 
-    gameOverLabel.textContent =
-        surrendered
-            ? "ИГРА ЗАВЕРШЕНА ДОСРОЧНО"
-            : "ИГРА ЗАВЕРШЕНА";
-
-
-    if (scores.tush > scores.font) {
-
-        winnerTitle.textContent =
-            `${teamNames.tush} побеждает`;
-
-    } else if (
-        scores.font > scores.tush
-    ) {
-
-        winnerTitle.textContent =
-            `${teamNames.font} побеждает`;
-
-    } else {
-
-        winnerTitle.textContent =
-            "Ничья";
     }
+);
 
 
-    finalScoreTush.textContent =
-        formatNumber(scores.tush);
-
-    finalScoreFont.textContent =
-        formatNumber(scores.font);
-
-
-    finalTeamNameTush.textContent =
-        teamNames.tush;
-
-    finalTeamNameFont.textContent =
-        teamNames.font;
-
-
-    gameOverModal.classList.remove(
-        "hidden"
-    );
-
-
-    saveGameState();
-}
-
-
-// ==============================
-// NEW GAME
-// ==============================
+// ==========================================
+// НОВАЯ ИГРА
+// ==========================================
 
 function startNewGame() {
-
-    const confirmed =
-        window.confirm(
-            "Начать новую игру?\n\nСчёт, раунд и использованные вопросы будут сброшены."
-        );
-
-
-    if (!confirmed) {
-        return;
-    }
-
 
     scores = {
         tush: 0,
@@ -943,268 +851,175 @@ function startNewGame() {
     };
 
 
-    teamNames = {
-        tush: "ТУШЬ",
-        font: "ШРИФТ"
-    };
+    usedQuestions = 0;
 
 
-    usedQuestions =
-        new Set();
+    updateScores();
+
+    updateQuestionsLeft();
+
+    updateRoundNumber();
 
 
-    roundNumber = 0;
+    // Сбрасываем все клетки
 
-    gameFinished = false;
+    const buttons =
+        document.querySelectorAll(
+            ".question-button"
+        );
 
-    currentQuestion = null;
 
+    buttons.forEach(
+        (button) => {
 
-    gameOverModal.classList.add(
-        "hidden"
+            button.disabled =
+                false;
+
+            button.classList.remove(
+                "used"
+            );
+
+        }
     );
 
 
-    modal.classList.add(
-        "hidden"
-    );
+    closeModal();
 
-
-    createGameBoard();
-
-    updateAllUI();
-
-    saveGameState();
 }
 
-
-// ==============================
-// BUTTONS
-// ==============================
 
 newGameButton.addEventListener(
     "click",
-    startNewGame
+    () => {
+
+        startNewGame();
+
+    }
 );
 
+
+// ==========================================
+// СДАТЬСЯ
+// ==========================================
+
+surrenderButton.addEventListener(
+    "click",
+    () => {
+
+        showGameOver();
+
+    }
+);
+
+
+// ==========================================
+// ОКОНЧАНИЕ ИГРЫ
+// ==========================================
+
+function showGameOver() {
+
+    const gameOverModal =
+        document.getElementById(
+            "game-over-modal"
+        );
+
+    const winnerTitle =
+        document.getElementById(
+            "winner-title"
+        );
+
+    const finalTeamNameTush =
+        document.getElementById(
+            "final-team-name-tush"
+        );
+
+    const finalTeamNameFont =
+        document.getElementById(
+            "final-team-name-font"
+        );
+
+    const finalScoreTush =
+        document.getElementById(
+            "final-score-tush"
+        );
+
+    const finalScoreFont =
+        document.getElementById(
+            "final-score-font"
+        );
+
+
+    finalTeamNameTush.textContent =
+        teamNameTush.value ||
+        "Команда 1";
+
+    finalTeamNameFont.textContent =
+        teamNameFont.value ||
+        "Команда 2";
+
+
+    finalScoreTush.textContent =
+        scores.tush;
+
+    finalScoreFont.textContent =
+        scores.font;
+
+
+    if (scores.tush > scores.font) {
+
+        winnerTitle.textContent =
+            `${teamNameTush.value || "Команда 1"} победила!`;
+
+    }
+    else if (scores.font > scores.tush) {
+
+        winnerTitle.textContent =
+            `${teamNameFont.value || "Команда 2"} победила!`;
+
+    }
+    else {
+
+        winnerTitle.textContent =
+            "Ничья!";
+
+    }
+
+
+    gameOverModal.classList.remove(
+        "hidden"
+    );
+
+}
+
+
+// ==========================================
+// КНОПКА "НОВАЯ ИГРА"
+// В ОКНЕ ОКОНЧАНИЯ
+// ==========================================
 
 restartGameButton.addEventListener(
     "click",
-    startNewGame
-);
+    () => {
 
-
-closeButton.addEventListener(
-    "click",
-    closeModal
-);
-
-
-// ==============================
-// ESC
-// ==============================
-
-document.addEventListener(
-    "keydown",
-    (event) => {
-
-        if (event.key !== "Escape") {
-            return;
-        }
-
-
-        if (
-            !modal.classList.contains(
-                "hidden"
-            )
-        ) {
-
-            closeModal();
-
-        } else if (
-            !gameOverModal.classList.contains(
-                "hidden"
-            )
-        ) {
-
-            gameOverModal.classList.add(
-                "hidden"
+        const gameOverModal =
+            document.getElementById(
+                "game-over-modal"
             );
-        }
+
+
+        gameOverModal.classList.add(
+            "hidden"
+        );
+
+
+        startNewGame();
+
     }
 );
 
 
-// ==============================
-// SAVE GAME
-// ==============================
-
-function saveGameState() {
-
-    const state = {
-
-        scores,
-
-        teamNames,
-
-        roundNumber,
-
-        gameFinished,
-
-        usedQuestions:
-            Array.from(
-                usedQuestions
-            )
-    };
-
-
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(state)
-    );
-}
-
-
-// ==============================
-// LOAD GAME
-// ==============================
-
-function loadGameState() {
-
-    try {
-
-        const saved =
-            localStorage.getItem(
-                STORAGE_KEY
-            );
-
-
-        if (!saved) {
-            return;
-        }
-
-
-        const state =
-            JSON.parse(saved);
-
-
-        if (state.scores) {
-
-            scores.tush =
-                Number(
-                    state.scores.tush
-                ) || 0;
-
-            scores.font =
-                Number(
-                    state.scores.font
-                ) || 0;
-        }
-
-
-        if (state.teamNames) {
-
-            if (
-                state.teamNames.tush
-            ) {
-                teamNames.tush =
-                    state.teamNames.tush;
-            }
-
-            if (
-                state.teamNames.font
-            ) {
-                teamNames.font =
-                    state.teamNames.font;
-            }
-        }
-
-
-        if (
-            typeof state.roundNumber ===
-            "number"
-        ) {
-
-            roundNumber =
-                state.roundNumber;
-        }
-
-
-        gameFinished =
-            Boolean(
-                state.gameFinished
-            );
-
-
-        if (
-            Array.isArray(
-                state.usedQuestions
-            )
-        ) {
-
-            usedQuestions =
-                new Set(
-                    state.usedQuestions
-                );
-        }
-
-
-        if (gameFinished) {
-
-            setTimeout(
-                () => finishGame(
-                    usedQuestions.size <
-                    getTotalQuestions()
-                ),
-                0
-            );
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Ошибка загрузки сохранённой игры:",
-            error
-        );
-
-
-        localStorage.removeItem(
-            STORAGE_KEY
-        );
-    }
-}
-
-
-// ==============================
-// FORMAT NUMBER
-// ==============================
-
-function formatNumber(number) {
-
-    return new Intl.NumberFormat(
-        "ru-RU"
-    ).format(number);
-}
-
-
-// ==============================
-// ESCAPE HTML
-// ==============================
-
-function escapeHtml(value) {
-
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
-// ==============================
-// START
-// ==============================
+// ==========================================
+// ЗАПУСК
+// ==========================================
 
 loadQuestions();
